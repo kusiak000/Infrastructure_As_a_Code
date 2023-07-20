@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+    VPCName:
+        Type: String
+        Default: IaaC-Lab1
+        Description: Podaj tag Name dla VPC?
+    VPCCIDR:
+        Type: String
+        Description: Podaj CIDR VPC?
+    SubnetACIDR:
+        Type: String
+        Description: Podaj CIDR SubnetA?
+    SubnetBCIDR:
+        Type: String
+        Description: Podaj CIDR SubnetB?
+    AMI:
+        Type: String
+        Description: AMI WinX64 ami-08ed5c5dd62794ec0 lub AMI Amazon Linux ami-0f9fc25dd2506cf6d
+    InstanceTypeParameter:
+        Type: String
+        Description: t2.micro t2.small t3.micro t3.small
+    Key:
+        Type: String
+        Description: Tu podaj nazwe klucza inaczej sie nie zalogujesz :).
+Resources:
+    VPC:
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock: !Ref VPCCIDR
+            EnableDnsSupport: true
+            EnableDnsHostnames: true
+            InstanceTenancy: default
+            Tags:
+            -
+                Key: Name
+                Value: !Ref VPCName
+    SubnetA:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone: us-east-1a
+            VpcId: !Ref VPC
+            CidrBlock: !Ref SubnetACIDR
+            MapPublicIpOnLaunch: true
+            Tags:
+            -
+                Key: Name
+                Value: SubnetA Public
+    SubnetB:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone: us-east-1b
+            VpcId: !Ref VPC
+            CidrBlock: !Ref SubnetBCIDR
+            MapPublicIpOnLaunch: true
+            Tags:
+            -
+                Key: Name
+                Value: SubnetB Public
+    InternetGateway:
+        Type: AWS::EC2::InternetGateway
+    VPCGatewayAttachment:
+        Type: AWS::EC2::VPCGatewayAttachment
+        Properties:
+            VpcId: !Ref VPC
+            InternetGatewayId: !Ref InternetGateway
+    RouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId: !Ref VPC
+    InternetRoute:
+        Type: AWS::EC2::Route
+        DependsOn: InternetGateway
+        Properties:
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId: !Ref InternetGateway
+            RouteTableId: !Ref RouteTable
+    SubnetARouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref RouteTable
+            SubnetId: !Ref SubnetA
+    SubnetBRouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref RouteTable
+            SubnetId: !Ref SubnetB
+    InstanceSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupName: "PSCLOUD Sec Group"
+            GroupDescription: "Sec group from PSCLOUD - AWS Instructor Pawel Switala"
+            VpcId: !Ref VPC
+            SecurityGroupIngress:
+            -
+                IpProtocol: tcp
+                FromPort: 3389
+                ToPort: 3389
+                CidrIp:  0.0.0.0/0
+            SecurityGroupEgress:
+            -
+                IpProtocol: -1
+                CidrIp: 0.0.0.0/0
+    DBSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupName: "PSCLOUD Sec Group RDS"
+            GroupDescription: "Sec group from PSCLOUD for RDS - AWS Instructor Pawel Switala"
+            VpcId: !Ref VPC
+            SecurityGroupIngress:
+            -
+                IpProtocol: tcp
+                FromPort: 3306
+                ToPort: 3306
+                CidrIp:  0.0.0.0/0
+            SecurityGroupEgress:
+            -
+                IpProtocol: -1
+                CidrIp: 0.0.0.0/0
+    DBSubnetGroup:
+        Type: AWS::RDS::DBSubnetGroup
+        Properties:
+            DBSubnetGroupDescription: PSCLOUD Subnet Group
+            SubnetIds:
+            - !Ref SubnetA
+            - !Ref SubnetB
+            Tags:
+            -
+                Key: Name
+                Value: DB Subnet Group from PSCLOUD
+    PSCLOUDEC2:
+        Type: 'AWS::EC2::Instance'
+        Properties:
+            ImageId: !Ref AMI
+            InstanceType:
+                Ref: InstanceTypeParameter
+            KeyName: !Ref Key
+            SubnetId: !Ref SubnetA
+            SecurityGroupIds:
+            - Ref: InstanceSecurityGroup
+            BlockDeviceMappings:
+                - DeviceName: /dev/sda1
+                  Ebs:
+                    VolumeSize: 30
+                    VolumeType: gp2
+            UserData:
+                Fn::Base64: !Sub |
+                    <powershell>
+                    Write-Host "Hello from PSCLOUD!"
+                    </powershell>
+            Tags:
+            -
+                Key: Name
+                Value: EC2 from PSCLOUD Template
