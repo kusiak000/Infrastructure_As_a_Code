@@ -3,7 +3,7 @@ Parameters:
     VPCName:
         Type: String
         Default: Infrastructure
-        Description: TAG VPC
+        Description: TAG VPC 
     
 VPCCIDR:
         Type: String
@@ -27,7 +27,7 @@ InstanceTypeParameter:
     
 Key:
         Type: String
-        Description: Nazwa Klucza to AWSKEY.pem
+        Description: Nazwa Klucza to AWSKEY.pem 'klucz dla Lunux
 Resources:
     VPC:
         Type: AWS::EC2::VPC
@@ -46,11 +46,11 @@ Resources:
             AvailabilityZone: us-east-1a
             VpcId: !Ref VPC
             CidrBlock: !Ref SubnetACIDR
-            MapPublicIpOnLaunch: true
+            MapPublicIpOnLaunch: true 'Podsieci muszą być publiczne aby można było się z nimi połaczyć
             Tags:
             -
                 Key: Name
-                Value: PodsiecA_PUB
+                Value: PodsiecA
     PodsiecB:
         Type: AWS::EC2::Subnet
         Properties:
@@ -61,7 +61,7 @@ Resources:
             Tags:
             -
                 Key: Name
-                Value: PodsiecB_PUB
+                Value: PodsiecB
    
 InternetGateway:
         Type: AWS::EC2::InternetGateway
@@ -69,7 +69,7 @@ InternetGateway:
         Type: AWS::EC2::VPCGatewayAttachment
         Properties:
             VpcId: !Ref VPC
-            InternetGatewayId: !Ref InternetGateway
+            InternetGatewayId: !Ref InternetGateway 'Zdefiniowanie wyjścia
    
 RouteTable:
         Type: AWS::EC2::RouteTable
