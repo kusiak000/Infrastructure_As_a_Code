@@ -2,17 +2,17 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
     VPCName:
         Type: String
-        Default: IaaC-Lab1
-        Description: Podaj tag Name dla VPC?
+        Default: IaaC_Tomsia
+        Description: Podaj nazwę VPC
     VPCCIDR:
         Type: String
-        Description: Podaj CIDR VPC?
+        Description: Podaj CIDR VPC
     SubnetACIDR:
         Type: String
-        Description: Podaj CIDR SubnetA?
+        Description: Podaj CIDR PodgrupyA
     SubnetBCIDR:
         Type: String
-        Description: Podaj CIDR SubnetB?
+        Description: Podaj CIDR PodgrupyB
     AMI:
         Type: String
         Description: AMI WinX64 ami-08ed5c5dd62794ec0 lub AMI Amazon Linux ami-0f9fc25dd2506cf6d
@@ -21,7 +21,7 @@ Parameters:
         Description: t2.micro t2.small t3.micro t3.small
     Key:
         Type: String
-        Description: Tu podaj nazwe klucza inaczej sie nie zalogujesz :).
+        Description: Podaj nazwę klucza.
 Resources:
     VPC:
         Type: AWS::EC2::VPC
@@ -87,8 +87,8 @@ Resources:
     InstanceSecurityGroup:
         Type: AWS::EC2::SecurityGroup
         Properties:
-            GroupName: "PSCLOUD Sec Group"
-            GroupDescription: "Sec group from PSCLOUD - AWS Instructor Pawel Switala"
+            GroupName: "IAAC_Tomsia"
+            GroupDescription: "Zabezpieczenia grupy IAAC_Tomsia"
             VpcId: !Ref VPC
             SecurityGroupIngress:
             -
@@ -103,8 +103,8 @@ Resources:
     DBSecurityGroup:
         Type: AWS::EC2::SecurityGroup
         Properties:
-            GroupName: "PSCLOUD Sec Group RDS"
-            GroupDescription: "Sec group from PSCLOUD for RDS - AWS Instructor Pawel Switala"
+            GroupName: "Grupa RDS"
+            GroupDescription: "Zabezpieczenia grupy RDS"
             VpcId: !Ref VPC
             SecurityGroupIngress:
             -
@@ -119,15 +119,15 @@ Resources:
     DBSubnetGroup:
         Type: AWS::RDS::DBSubnetGroup
         Properties:
-            DBSubnetGroupDescription: PSCLOUD Subnet Group
+            DBSubnetGroupDescription: Podgrupy
             SubnetIds:
             - !Ref SubnetA
             - !Ref SubnetB
             Tags:
             -
                 Key: Name
-                Value: DB Subnet Group from PSCLOUD
-    PSCLOUDEC2:
+                Value: Database_Group
+    EC2:
         Type: 'AWS::EC2::Instance'
         Properties:
             ImageId: !Ref AMI
@@ -142,12 +142,8 @@ Resources:
                   Ebs:
                     VolumeSize: 30
                     VolumeType: gp2
-            UserData:
-                Fn::Base64: !Sub |
-                    <powershell>
-                    Write-Host "Hello from PSCLOUD!"
-                    </powershell>
+           
             Tags:
             -
                 Key: Name
-                Value: EC2 from PSCLOUD Template
+                Value: EC2 Infrastructure as a code
