@@ -1,0 +1,163 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+    VPCName:
+        Type: String
+        Default: Infrastructure
+        Description: TAG VPC 
+    
+VPCCIDR:
+        Type: String
+        Description: VPC
+    
+SubnetACIDR:
+        Type: String
+        Description: CIDR PodsieciA
+    
+SubnetBCIDR:
+        Type: String
+        Description: CIDR PodsieciB
+    
+AMI:
+        Type: String
+        Description: AMI WinX64 ami-07fg6c5gt52891jy0 lub AMI Amazon Linux ami-04823729c75214919
+    
+InstanceTypeParameter:
+        Type: String
+        Description: t2.micro t2.small t3.micro t3.small
+    
+Key:
+        Type: String
+        Description: Nazwa Klucza to AWSKEY.pem 'klucz dla Lunux
+Resources:
+    VPC:
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock: !Ref VPCCIDR
+            EnableDnsSupport: true
+            EnableDnsHostnames: true
+            InstanceTenancy: default
+            Tags:
+            -
+                Key: Name
+                Value: !Ref VPCName
+    PodsiecA:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone: us-east-1a
+            VpcId: !Ref VPC
+            CidrBlock: !Ref SubnetACIDR
+            MapPublicIpOnLaunch: true 'Podsieci muszą być publiczne aby można było się z nimi połaczyć
+            Tags:
+            -
+                Key: Name
+                Value: PodsiecA
+    PodsiecB:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone: us-east-1b
+            VpcId: !Ref VPC
+            CidrBlock: !Ref SubnetBCIDR
+            MapPublicIpOnLaunch: true
+            Tags:
+            -
+                Key: Name
+                Value: PodsiecB
+   
+InternetGateway:
+        Type: AWS::EC2::InternetGateway
+    VPCGatewayAttachment:
+        Type: AWS::EC2::VPCGatewayAttachment
+        Properties:
+            VpcId: !Ref VPC
+            InternetGatewayId: !Ref InternetGateway 'Zdefiniowanie wyjścia
+   
+RouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId: !Ref VPC
+  
+InternetRoute:
+        Type: AWS::EC2::Route
+        DependsOn: InternetGateway
+        Properties:
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId: !Ref InternetGateway
+            RouteTableId: !Ref RouteTable
+   
+SubnetARouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref RouteTable
+            SubnetId: !Ref SubnetA
+    
+SubnetBRouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref RouteTable
+            SubnetId: !Ref PodsiecB
+    
+InstanceSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupName: "AWS_CLOUD"
+            GroupDescription: "Grupa bezpieczenstwa AWS_CLOUD"
+            VpcId: !Ref VPC
+            SecurityGroupIngress:
+            -
+                IpProtocol: tcp
+                FromPort: 3389
+                ToPort: 3389
+                CidrIp:  0.0.0.0/0
+            SecurityGroupEgress:
+            -
+                IpProtocol: -1
+                CidrIp: 0.0.0.0/0
+    DBSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupName: "AWS_Route"
+            GroupDescription: "Grupa zabezpieczeń AWS Cloud Route"
+            VpcId: !Ref VPC
+            SecurityGroupIngress:
+            -
+                IpProtocol: tcp
+                FromPort: 3306
+                ToPort: 3306
+                CidrIp:  0.0.0.0/0
+            SecurityGroupEgress:
+            -
+                IpProtocol: -1
+                CidrIp: 0.0.0.0/0
+    DBSubnetGroup:
+        Type: AWS::RDS::DBSubnetGroup
+        Properties:
+            DBSubnetGroupDescription: Grupa_podsieci
+            SubnetIds:
+            - !Ref PodsiecA
+            - !Ref PodsiecB
+            Tags:
+            -
+                Key: Name
+                Value: Grupa_Podsieci
+    AWSEC2:
+        Type: 'AWS::EC2::Instance'
+        Properties:
+            ImageId: !Ref AMI
+            InstanceType:
+                Ref: InstanceTypeParameter
+            KeyName: !Ref Key
+            SubnetId: !Ref PodsiecA
+            SecurityGroupIds:
+            - Ref: InstanceSecurityGroup
+            BlockDeviceMappings:
+                - DeviceName: /dev/mach
+                  Ebs:
+                    VolumeSize: 30
+                    VolumeType: gp2
+            UserData:
+                Fn::Base64: !Sub |
+                   
+            Tags:
+            -
+                Key: Name
+                Value: AWS
