@@ -52,6 +52,52 @@ resource "aws_route_table" "private_route_table" {
     }
   }
 }
+variable "subnet_id" {
+  description = "ID podsieci, w której ma zostać utworzona instancja EC2"
+}
+
+variable "instance_type" {
+  description = "Typ instancji EC2 (np. t2.micro)"
+}
+
+variable "ami_id" {
+
+  description = "ID obrazu maszyny (AMI) - AMI WinX64 ami-07fg6c5gt52891jy0 lub AMI Amazon Linux ami-04823729c75214919"
+}
+
+resource "aws_key_pair" "ssh_key_pair" {
+  key_name   = "AWSKEY.pem"  # Zmień nazwę klucza SSH na swoją
+  public_key = file("~/.ssh/AWSKEY.pem")  # Ścieżka do klucza publicznego SSH
+}
+
+resource "aws_security_group" "ec2_security_group" {
+  name_prefix = "ec2-sg-"
+
+  dynamic "ingress" {
+    for_each = var.ami_id == "windows" ? [3389] : [22]  # Jeśli to Windows, otwórz port 3389, w przeciwnym razie otwórz port 22
+    content {
+      from_port = ingress.value
+      to_port   = ingress.value
+      protocol  = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+}
+
+resource "aws_instance" "ec2_instance" {
+  ami           = var.ami_id
+  instance_type = var.instance_type
+  subnet_id     = var.subnet_id
+  key_name      = AWSKEY.pem
+
+  vpc_security_group_ids = [
+    aws_security_group.ec2_security_group.id,
+  ]
+}
+
+output "ec2_instance_id" {
+  value = aws_instance.ec2_instance.id
+}
 
 resource "aws_route_table_association" "private_subnet_association" {
   count          = length(aws_subnet.private_subnets)
@@ -73,9 +119,9 @@ output "public_subnet_ids" {
 module "vpc_subnet_nat" {
   source = "./vpc_subnet_nat"
 
-  vpc_cidr_block            = "10.0.0.0/16"
-  private_subnet_cidr_blocks = ["10.0.1.0/24", "10.0.2.0/24"]
-  public_subnet_cidr_blocks  = ["10.0.101.0/24", "10.0.102.0/24"]
+  vpc_cidr_block            = "10.200.0.0/16"
+  private_subnet_cidr_blocks = ["10.200.1.0/24", "10.200.2.0/24"]
+  public_subnet_cidr_blocks  = ["10.200.101.0/24", "10.200.102.0/24"]
 }
 
 module "ec2_instance" {
