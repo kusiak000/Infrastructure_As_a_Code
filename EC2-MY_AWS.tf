@@ -1,7 +1,20 @@
 #EC2-My_AWS.tf
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "3.25.0"
+    }
+  }
+  
+}
 
 provider "aws" {
-  region = var.region
+  region = "us-east-1"
+}
+
+data "aws_ami" "app"{
+  most_recent = true
 }
 
 module "vpc" {
